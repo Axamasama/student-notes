@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <title>Студенческий блокнот</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Подключаем библиотеку docx.js -->
+  <script src="https://cdn.jsdelivr.net/npm/docx@7.0.0/build/index.min.js"></script>
   <style>
     body {
       font-family: "Segoe UI", Roboto, Arial, sans-serif;
@@ -91,7 +93,6 @@
       color: white;
     }
 
-    /* 🔹 Адаптивность */
     @media (max-width: 600px) {
       h1 {
         font-size: 20px;
@@ -116,7 +117,7 @@
     <textarea id="notes" placeholder="Пиши конспект здесь..."></textarea>
     <div class="buttons">
       <button class="btn-download" onclick="downloadTxt()">Скачать .txt</button>
-      <button class="btn-doc" onclick="downloadDoc()">Скачать .doc</button>
+      <button class="btn-doc" onclick="downloadDoc()">Скачать .docx</button>
       <button class="btn-clear" onclick="clearNotes()">Очистить</button>
     </div>
   </div>
@@ -142,17 +143,29 @@
     }
 
     function downloadDoc() {
-      const text = notes.value;
-      const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' "+
-                     "xmlns:w='urn:schemas-microsoft-com:office:word' "+
-                     "xmlns='http://www.w3.org/TR/REC-html40'>";
-      const body = "<head><meta charset='utf-8'></head><body>" + text.replace(/\n/g, "<br>") + "</body></html>";
-      const source = header + body;
-      const blob = new Blob(['\ufeff', source], { type: 'application/msword' });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "konspekt.doc";
-      link.click();
+      const { Document, Packer, Paragraph, TextRun } = window.docx;
+
+      const doc = new Document({
+        sections: [
+          {
+            properties: {},
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun(notes.value),
+                ],
+              }),
+            ],
+          },
+        ],
+      });
+
+      Packer.toBlob(doc).then((blob) => {
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "konspekt.docx";
+        link.click();
+      });
     }
 
     function clearNotes() {
