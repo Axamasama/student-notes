@@ -10,7 +10,7 @@
       font-family: "Segoe UI", Roboto, Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background: linear-gradient(135deg, #e0f7fa, #f3e5f5);
+      background: linear-gradient(135deg, #e8f0f8, #f2eaf8);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -46,6 +46,12 @@
       border-radius: 12px;
       box-shadow: 0 6px 15px rgba(0,0,0,0.08);
       overflow: hidden;
+      transition: transform 0.2s, background 0.3s;
+    }
+
+    .note-box:hover, .note-box:focus-within {
+      transform: translateY(-3px);
+      background: rgba(255,255,255,0.1);
     }
 
     .note-box h2 {
@@ -67,18 +73,20 @@
       resize: none;
       box-sizing: border-box;
       color: #333;
-      background: rgba(255,255,255,0.9);
+      background: rgba(255,255,255,0.95);
+      transition: background 0.3s;
     }
 
     .note-box textarea:focus {
+      background: rgba(255,255,255,1);
       box-shadow: 0 0 8px rgba(0,0,0,0.2);
     }
 
-    /* Цвета для каждого раздела */
-    #box1 h2 { background: #ff8a65; }       /* коралловый */
-    #box2 h2 { background: #4db6ac; }       /* мятный */
-    #box3 h2 { background: #ffd54f; }       /* желтый */
-    #box4 h2 { background: #9575cd; }       /* сиреневый */
+    /* Мягкие пастельные цвета для заголовков */
+    #box1 h2 { background: #ffab91; }       /* пастельный коралловый */
+    #box2 h2 { background: #80cbc4; }       /* пастельный мятный */
+    #box3 h2 { background: #ffe082; }       /* пастельный желтый */
+    #box4 h2 { background: #b39ddb; }       /* пастельный сиреневый */
 
     .buttons {
       text-align: center;
@@ -151,7 +159,6 @@
     const noteIds = ["notes1", "notes2", "notes3", "notes4"];
     const notes = noteIds.map(id => document.getElementById(id));
 
-    // Загружаем заметки из localStorage
     notes.forEach((note, i) => {
       note.value = localStorage.getItem("konspekt" + i) || "";
       note.addEventListener("input", () => {
@@ -174,7 +181,6 @@
 
     function downloadDoc() {
       const { Document, Packer, Paragraph, TextRun } = window.docx;
-
       const children = [];
       notes.forEach(note => {
         children.push(new Paragraph({
@@ -183,9 +189,7 @@
         children.push(new Paragraph({ children: [new TextRun(note.value)] }));
         children.push(new Paragraph({ children: [new TextRun("")] }));
       });
-
       const doc = new Document({ sections: [{ children }] });
-
       Packer.toBlob(doc).then((blob) => {
         const link = document.createElement("a");
         link.href = URL.createObjectURL(blob);
