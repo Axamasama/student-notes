@@ -250,14 +250,7 @@
         if(i < slices - 1) doc.addPage();
       }
 
-      // подпись автора: ставим на последнюю страницу внизу справа
-      const lastPage = doc.getNumberOfPages();
-      doc.setPage(lastPage);
-      const signature = "В. Куулар";
-      doc.setFontSize(11);
-      try{ doc.setFont('Times', 'italic'); } catch(e){} // если не поддерживается — ок
-      const sigY = pageHeight - (marginBottom / 2); // чуть выше нижнего поля
-      doc.text(signature, pageWidth - marginRight, sigY, { align: 'right' });
+      
 
       // сохраняем файл
       doc.save("bloknot.pdf");
@@ -280,3 +273,4 @@
 </script>
 </body>
 </html>
+
