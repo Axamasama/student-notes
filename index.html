@@ -2,10 +2,12 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Студенческий блокнот</title>
+  <title>Блокнот</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/docx@7.0.0/build/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <!-- jsPDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     body {
       font-family: "Segoe UI", Roboto, Arial, sans-serif;
@@ -26,40 +28,8 @@
       width: 95%;
       max-width: 950px;
       box-sizing: border-box;
+      position: relative;
     }
-
-    h1 {
-      text-align: center;
-      font-size: 26px;
-      margin-bottom: 20px;
-      color: #4a148c;
-    }
-
-    /* Вкладки */
-    .tabs {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 15px;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .tab-btn {
-      background: #8e24aa; /* насыщенный фиолетовый */
-      color: white;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: 0.2s;
-      font-size: 14px;
-    }
-
-    .tab-btn:hover { background: #ab47bc; }
-    .tab-btn.active { background: #6a1b9a; }
-
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
 
     /* Блокнот сетка */
     .note-grid {
@@ -101,11 +71,11 @@
       background: rgba(255,255,255,0.95);
     }
 
-    /* Более насыщенные цвета заголовков */
-    #box1 h2 { background: #ff7043; }   /* насыщенный коралловый */
-    #box2 h2 { background: #26a69a; }   /* насыщенный мятный */
-    #box3 h2 { background: #ffd54f; }   /* насыщенный желтый */
-    #box4 h2 { background: #7e57c2; }   /* насыщенный сиреневый */
+    /* Цвета заголовков */
+    #box1 h2 { background: #ff7043; }
+    #box2 h2 { background: #26a69a; }
+    #box3 h2 { background: #ffd54f; }
+    #box4 h2 { background: #7e57c2; }
 
     .buttons {
       text-align: center;
@@ -131,11 +101,20 @@
 
     .btn-download { background: #43a047; color: white; }
     .btn-doc { background: #1e88e5; color: white; }
+    .btn-pdf { background: #f9a825; color: white; }
     .btn-clear { background: #e53935; color: white; }
-    .btn-send { background: #8e24aa; color: white; }
+
+    /* Подпись автора */
+    .author {
+      position: absolute;
+      bottom: 10px;
+      right: 15px;
+      font-size: 12px;
+      color: #aaa;
+      font-style: italic;
+    }
 
     @media (max-width: 600px) {
-      h1 { font-size: 22px; }
       .note-grid { grid-template-columns: 1fr; }
       .note-box textarea { height: 130px; font-size: 14px; }
       button { flex: 1 1 100%; width: 100%; }
@@ -144,83 +123,39 @@
 </head>
 <body>
 <div class="container">
-  <h1>📒 Студенческий блокнот</h1>
-
-  <!-- Вкладка Блокнот сверху -->
-  <div class="tabs">
-    <button class="tab-btn active" onclick="openTab('notebook')">Блокнот</button>
-  </div>
-
-  <!-- Вкладки групп под блокнотом -->
-  <div class="tabs">
-    <button class="tab-btn" onclick="openTab('group1')">1 группа</button>
-    <button class="tab-btn" onclick="openTab('group2')">2 группа</button>
-    <button class="tab-btn" onclick="openTab('group3')">3 группа</button>
-  </div>
-
-  <!-- Контент Блокнота -->
-  <div id="notebook" class="tab-content active">
-    <div class="note-grid">
-      <div class="note-box" id="box1">
-        <h2>Понятие трудового договора</h2>
-        <textarea id="notes1" placeholder="Пиши здесь..."></textarea>
-      </div>
-      <div class="note-box" id="box2">
-        <h2>Стороны</h2>
-        <textarea id="notes2" placeholder="Пиши здесь..."></textarea>
-      </div>
-      <div class="note-box" id="box3">
-        <h2>Обязательные условия</h2>
-        <textarea id="notes3" placeholder="Пиши здесь..."></textarea>
-      </div>
-      <div class="note-box" id="box4">
-        <h2>Признаки трудовых отношений</h2>
-        <textarea id="notes4" placeholder="Пиши здесь..."></textarea>
-      </div>
+  <!-- Блокнот -->
+  <div class="note-grid">
+    <div class="note-box" id="box1">
+      <h2>Понятие трудового договора</h2>
+      <textarea id="notes1" placeholder="Пиши здесь..."></textarea>
     </div>
-    <div class="buttons">
-      <button class="btn-download" onclick="downloadTxt()">Скачать .txt</button>
-      <button class="btn-doc" onclick="downloadDoc()">Скачать .docx</button>
-      <button class="btn-clear" onclick="clearNotes()">Очистить</button>
+    <div class="note-box" id="box2">
+      <h2>Стороны</h2>
+      <textarea id="notes2" placeholder="Пиши здесь..."></textarea>
+    </div>
+    <div class="note-box" id="box3">
+      <h2>Обязательные условия</h2>
+      <textarea id="notes3" placeholder="Пиши здесь..."></textarea>
+    </div>
+    <div class="note-box" id="box4">
+      <h2>Признаки трудовых отношений</h2>
+      <textarea id="notes4" placeholder="Пиши здесь..."></textarea>
     </div>
   </div>
 
-  <!-- Контент групп -->
-  <div id="group1" class="tab-content">
-    <h2 style="text-align:center;color:#8e24aa;">1 группа</h2>
-    <textarea id="group1Text" style="width:100%;height:150px;"></textarea>
-    <div class="buttons">
-      <button class="btn-send" onclick="sendText('1 группа','group1Text')">Отправить</button>
-    </div>
+  <div class="buttons">
+    <button class="btn-download" onclick="downloadTxt()">Скачать .txt</button>
+    <button class="btn-doc" onclick="downloadDoc()">Скачать .docx</button>
+    <button class="btn-pdf" onclick="downloadPdf()">Скачать .pdf</button>
+    <button class="btn-clear" onclick="clearNotes()">Очистить</button>
   </div>
 
-  <div id="group2" class="tab-content">
-    <h2 style="text-align:center;color:#8e24aa;">2 группа</h2>
-    <textarea id="group2Text" style="width:100%;height:150px;"></textarea>
-    <div class="buttons">
-      <button class="btn-send" onclick="sendText('2 группа','group2Text')">Отправить</button>
-    </div>
-  </div>
-
-  <div id="group3" class="tab-content">
-    <h2 style="text-align:center;color:#8e24aa;">3 группа</h2>
-    <textarea id="group3Text" style="width:100%;height:150px;"></textarea>
-    <div class="buttons">
-      <button class="btn-send" onclick="sendText('3 группа','group3Text')">Отправить</button>
-    </div>
-  </div>
+  <div class="author">В. Куулар</div>
 </div>
 
 <script>
   // Инициализация EmailJS
   (function(){ emailjs.init("DFfPah4u5mx43H9wB"); })();
-
-  function openTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(tabId).classList.add('active');
-    event.target.classList.add('active');
-  }
 
   // Сохранение конспекта
   const noteIds = ["notes1","notes2","notes3","notes4"];
@@ -259,6 +194,32 @@
     });
   }
 
+  async function downloadPdf(){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    let y = 15;
+
+    notes.forEach(note=>{
+      doc.setFont("Helvetica","bold");
+      doc.setFontSize(14);
+      doc.text(note.previousElementSibling.textContent, 15, y);
+      y += 8;
+
+      doc.setFont("Helvetica","normal");
+      doc.setFontSize(12);
+      const lines = doc.splitTextToSize(note.value, 180);
+      doc.text(lines, 15, y);
+      y += lines.length * 7 + 10;
+
+      if (y > 270) { // новая страница если слишком низко
+        doc.addPage();
+        y = 15;
+      }
+    });
+
+    doc.save("konspekt.pdf");
+  }
+
   function clearNotes(){
     if(confirm("Точно очистить конспект?")){
       notes.forEach((note,i)=>{
@@ -266,15 +227,6 @@
         localStorage.removeItem("konspekt"+i);
       });
     }
-  }
-
-  // Отправка текста через EmailJS
-  function sendText(group, textareaId){
-    const text=document.getElementById(textareaId).value;
-    if(text.trim()===""){ alert("Введите текст перед отправкой!"); return; }
-    emailjs.send("service_qmoyodo","template_hq1xxxu",{ group:group, message:text })
-      .then(()=>{ alert("Сообщение отправлено успешно!"); })
-      .catch(error=>{ alert("Ошибка при отправке: "+JSON.stringify(error)); });
   }
 </script>
 </body>
