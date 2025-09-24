@@ -1,231 +1,280 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Блокнот</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- библиотеки -->
   <script src="https://cdn.jsdelivr.net/npm/docx@7.0.0/build/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-  <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
   <style>
-    body {
-      font-family: "Segoe UI", Roboto, Arial, sans-serif;
-      margin: 0;
-      padding: 0;
+    :root{
+      --page-font: "Segoe UI", Roboto, Arial, sans-serif;
+    }
+    body{
+      font-family: var(--page-font);
+      margin:0;
+      padding:0;
       background: linear-gradient(135deg, #e8f0f8, #f2eaf8);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
     }
 
-    .container {
+    .container{
+      background:white;
+      padding:20px;
+      border-radius:20px;
+      box-shadow:0 12px 30px rgba(0,0,0,0.1);
+      width:95%;
+      max-width:950px;
+      box-sizing:border-box;
+      position:relative;
+      padding-bottom:60px; /* место для подписи */
+    }
+
+    .note-box{
+      border-radius:12px;
+      box-shadow:0 6px 15px rgba(0,0,0,0.08);
+      overflow:hidden;
+      background:#fff;
+    }
+
+    textarea#notesMain{
+      width:100%;
+      height:500px;
+      font-size:15px;
+      padding:14px;
+      border:none;
+      outline:none;
+      resize:vertical;
+      box-sizing:border-box;
+      color:#111;
+      background:transparent;
+      line-height:1.6;
+      font-family: var(--page-font);
+      white-space:pre-wrap;
+    }
+
+    .buttons{
+      text-align:center;
+      margin-top:20px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      justify-content:center;
+    }
+
+    button{
+      flex:1 1 30%;
+      min-width:130px;
+      padding:12px 15px;
+      font-size:16px;
+      border:none;
+      border-radius:12px;
+      cursor:pointer;
+      transition:transform .2s, box-shadow .2s;
+    }
+    button:hover{ transform: translateY(-2px); box-shadow:0 6px 12px rgba(0,0,0,0.15); }
+
+    .btn-download{ background:#43a047; color:#fff; }
+    .btn-doc{ background:#1e88e5; color:#fff; }
+    .btn-pdf{ background:#f9a825; color:#fff; }
+    .btn-clear{ background:#e53935; color:#fff; }
+
+    .author{
+      position:absolute;
+      bottom:15px;
+      right:20px;
+      font-size:13px;
+      color:#444;
+      font-style:italic;
+    }
+
+    @media (max-width:600px){
+      textarea#notesMain{ height:320px; font-size:14px; }
+      button{ flex:1 1 100%; width:100%; }
+    }
+
+    /* Стили для скрытого рендера (html2canvas) */
+    .pdf-render {
+      box-sizing: border-box;
       background: white;
-      padding: 20px;
-      border-radius: 20px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.1);
-      width: 95%;
-      max-width: 950px;
-      box-sizing: border-box;
-      position: relative;
-    }
-
-    /* Блокнот сетка */
-    .note-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-gap: 20px;
-    }
-
-    .note-box {
-      display: flex;
-      flex-direction: column;
-      border-radius: 12px;
-      box-shadow: 0 6px 15px rgba(0,0,0,0.08);
-      overflow: hidden;
-      transition: transform 0.2s, background 0.3s;
-    }
-
-    .note-box:hover, .note-box:focus-within { transform: translateY(-3px); }
-
-    .note-box h2 {
-      font-size: 16px;
-      margin: 0;
-      padding: 10px;
-      text-align: center;
-      color: #ffffff;
-      font-weight: 600;
-    }
-
-    .note-box textarea {
-      width: 100%;
-      height: 160px;
-      font-size: 14px;
-      padding: 10px;
-      border: none;
-      outline: none;
-      resize: none;
-      box-sizing: border-box;
-      color: #333;
-      background: rgba(255,255,255,0.95);
-    }
-
-    /* Цвета заголовков */
-    #box1 h2 { background: #ff7043; }
-    #box2 h2 { background: #26a69a; }
-    #box3 h2 { background: #ffd54f; }
-    #box4 h2 { background: #7e57c2; }
-
-    .buttons {
-      text-align: center;
-      margin-top: 20px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      justify-content: center;
-    }
-
-    button {
-      flex: 1 1 30%;
-      min-width: 130px;
-      padding: 12px 15px;
-      font-size: 16px;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    button:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
-
-    .btn-download { background: #43a047; color: white; }
-    .btn-doc { background: #1e88e5; color: white; }
-    .btn-pdf { background: #f9a825; color: white; }
-    .btn-clear { background: #e53935; color: white; }
-
-    /* Подпись автора */
-    .author {
-      position: absolute;
-      bottom: 10px;
-      right: 15px;
-      font-size: 12px;
-      color: #aaa;
-      font-style: italic;
-    }
-
-    @media (max-width: 600px) {
-      .note-grid { grid-template-columns: 1fr; }
-      .note-box textarea { height: 130px; font-size: 14px; }
-      button { flex: 1 1 100%; width: 100%; }
+      color: #111;
+      padding: 14px;
+      font-family: var(--page-font);
+      font-size: 15px;
+      line-height: 1.6;
+      white-space: pre-wrap; /* сохраняем переносы */
+      word-wrap: break-word;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <!-- Блокнот -->
-  <div class="note-grid">
-    <div class="note-box" id="box1">
-      <h2>Понятие трудового договора</h2>
-      <textarea id="notes1" placeholder="Пиши здесь..."></textarea>
+  <div class="container">
+    <div class="note-box">
+      <textarea id="notesMain" placeholder="Пиши здесь..."></textarea>
     </div>
-    <div class="note-box" id="box2">
-      <h2>Стороны</h2>
-      <textarea id="notes2" placeholder="Пиши здесь..."></textarea>
-    </div>
-    <div class="note-box" id="box3">
-      <h2>Обязательные условия</h2>
-      <textarea id="notes3" placeholder="Пиши здесь..."></textarea>
-    </div>
-    <div class="note-box" id="box4">
-      <h2>Признаки трудовых отношений</h2>
-      <textarea id="notes4" placeholder="Пиши здесь..."></textarea>
-    </div>
-  </div>
 
-  <div class="buttons">
-    <button class="btn-download" onclick="downloadTxt()">Скачать .txt</button>
-    <button class="btn-doc" onclick="downloadDoc()">Скачать .docx</button>
-    <button class="btn-pdf" onclick="downloadPdf()">Скачать .pdf</button>
-    <button class="btn-clear" onclick="clearNotes()">Очистить</button>
-  </div>
+    <div class="buttons">
+      <button class="btn-download" onclick="downloadTxt()">Скачать .txt</button>
+      <button class="btn-doc" onclick="downloadDoc()">Скачать .docx</button>
+      <button class="btn-pdf" onclick="downloadPdf()">Скачать .pdf</button>
+      <button class="btn-clear" onclick="clearNotes()">Очистить</button>
+    </div>
 
-  <div class="author">В. Куулар</div>
-</div>
+    <div class="author">В. Куулар</div>
+  </div>
 
 <script>
-  // Инициализация EmailJS
-  (function(){ emailjs.init("DFfPah4u5mx43H9wB"); })();
+  // инициализация emailjs (если нужно)
+  (function(){ if(window.emailjs) emailjs.init("DFfPah4u5mx43H9wB"); })();
 
-  // Сохранение конспекта
-  const noteIds = ["notes1","notes2","notes3","notes4"];
-  const notes = noteIds.map(id=>document.getElementById(id));
-  notes.forEach((note,i)=>{
-    note.value = localStorage.getItem("konspekt"+i)||"";
-    note.addEventListener("input",()=>{ localStorage.setItem("konspekt"+i,note.value); });
-  });
+  // localStorage сохранение
+  const note = document.getElementById("notesMain");
+  note.value = localStorage.getItem("mainNote") || "";
+  note.addEventListener("input", ()=> localStorage.setItem("mainNote", note.value));
 
   function downloadTxt(){
-    let text="";
-    notes.forEach(note=>{
-      text+=note.previousElementSibling.textContent+":\n"+note.value+"\n\n";
-    });
-    const blob = new Blob([text],{ type:"text/plain;charset=utf-8" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "konspekt.txt";
-    link.click();
+    const text = note.value;
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "bloknot.txt";
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   function downloadDoc(){
     const { Document, Packer, Paragraph, TextRun } = window.docx;
-    const children=[];
-    notes.forEach(note=>{
-      children.push(new Paragraph({ children:[new TextRun({ text: note.previousElementSibling.textContent, bold:true, size:28 })] }));
-      children.push(new Paragraph({ children:[new TextRun(note.value)] }));
-      children.push(new Paragraph({ children:[new TextRun("")] }));
+    const paragraphs = [];
+    // сохраняем как один большой параграф, сохраняя переносы
+    const lines = note.value.split("\n");
+    lines.forEach((ln, idx) => {
+      paragraphs.push(new Paragraph({ children: [ new TextRun(ln || " ") ] }));
+      if(idx < lines.length) paragraphs.push(new Paragraph({ children: [ new TextRun("") ] }));
     });
-    const doc=new Document({ sections:[{ children }] });
-    Packer.toBlob(doc).then(blob=>{
-      const link=document.createElement("a");
-      link.href=URL.createObjectURL(blob);
-      link.download="konspekt.docx";
+    const doc = new Document({ sections: [{ properties: {}, children: paragraphs }] });
+    Packer.toBlob(doc).then(blob => {
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "bloknot.docx";
       link.click();
+      URL.revokeObjectURL(link.href);
     });
   }
 
+  // ==== PDF EXPORT (html2canvas + jsPDF) ====
   async function downloadPdf(){
+    // параметры PDF
     const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    let y = 15;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
 
-    notes.forEach(note=>{
-      doc.setFont("Helvetica","bold");
-      doc.setFontSize(14);
-      doc.text(note.previousElementSibling.textContent, 15, y);
-      y += 8;
+    const marginLeft = 15;
+    const marginRight = 15;
+    const marginTop = 15;
+    const marginBottom = 25; // оставляем место для подписи
 
-      doc.setFont("Helvetica","normal");
-      doc.setFontSize(12);
-      const lines = doc.splitTextToSize(note.value, 180);
-      doc.text(lines, 15, y);
-      y += lines.length * 7 + 10;
+    const contentWidthMM = pageWidth - marginLeft - marginRight;
+    const pxPerMm = 96 / 25.4; // примерно
+    const scale = Math.min(window.devicePixelRatio || 1, 2); // масштаб рендера (2 для лучшего качества, не слишком большой)
+    const contentWidthPx = Math.floor(contentWidthMM * pxPerMm * scale);
 
-      if (y > 270) { // новая страница если слишком низко
-        doc.addPage();
-        y = 15;
+    // создаём скрытый див для рендера, в нём используем <pre> чтобы сохранить переносы и пробелы
+    const div = document.createElement('div');
+    div.style.position = 'absolute';
+    div.style.left = '-9999px';
+    div.style.top = '0';
+    div.style.width = contentWidthPx + 'px';
+    div.className = 'pdf-render';
+
+    const pre = document.createElement('pre');
+    pre.style.margin = '0';
+    pre.style.padding = '0';
+    pre.style.whiteSpace = 'pre-wrap';
+    pre.style.wordWrap = 'break-word';
+    pre.textContent = note.value || '';
+    div.appendChild(pre);
+    document.body.appendChild(div);
+
+    try {
+      // рендерим в canvas
+      const canvas = await html2canvas(div, {
+        scale: scale,
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        windowWidth: document.documentElement.clientWidth,
+        windowHeight: document.documentElement.clientHeight
+      });
+
+      // расчёт высоты одной страницы в пикселях (контентная область)
+      const pageContentHeightMM = pageHeight - marginTop - marginBottom;
+      const pageContentHeightPx = Math.floor(pageContentHeightMM * pxPerMm * scale);
+
+      let imgWidthPx = canvas.width;
+      let imgHeightPx = canvas.height;
+
+      // если содержимое поместилось на одну страницу
+      let slices = Math.ceil(imgHeightPx / pageContentHeightPx);
+
+      for(let i = 0; i < slices; i++){
+        const sliceStartY = i * pageContentHeightPx;
+        const sliceHeightPx = Math.min(pageContentHeightPx, imgHeightPx - sliceStartY);
+
+        // создаём временный canvas для среза
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = imgWidthPx;
+        sliceCanvas.height = sliceHeightPx;
+        const ctx = sliceCanvas.getContext('2d');
+        // drawImage source: sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
+        ctx.drawImage(canvas, 0, sliceStartY, imgWidthPx, sliceHeightPx, 0, 0, imgWidthPx, sliceHeightPx);
+
+        const imgData = sliceCanvas.toDataURL('image/jpeg', 1.0);
+
+        // вычисляем размеры в мм для вставки в PDF
+        const sliceHeightMM = sliceHeightPx / (pxPerMm * scale);
+
+        // на первой странице просто добавляем картинку
+        doc.addImage(imgData, 'JPEG', marginLeft, marginTop, contentWidthMM, sliceHeightMM);
+
+        // если ещё есть страницы — добавляем
+        if(i < slices - 1) doc.addPage();
       }
-    });
 
-    doc.save("konspekt.pdf");
+      // подпись автора: ставим на последнюю страницу внизу справа
+      const lastPage = doc.getNumberOfPages();
+      doc.setPage(lastPage);
+      const signature = "В. Куулар";
+      doc.setFontSize(11);
+      try{ doc.setFont('Times', 'italic'); } catch(e){} // если не поддерживается — ок
+      const sigY = pageHeight - (marginBottom / 2); // чуть выше нижнего поля
+      doc.text(signature, pageWidth - marginRight, sigY, { align: 'right' });
+
+      // сохраняем файл
+      doc.save("bloknot.pdf");
+
+    } catch (err) {
+      alert("Ошибка при создании PDF: " + err);
+      console.error(err);
+    } finally {
+      // удаляем скрытый контейнер
+      document.body.removeChild(div);
+    }
   }
 
   function clearNotes(){
-    if(confirm("Точно очистить конспект?")){
-      notes.forEach((note,i)=>{
-        note.value="";
-        localStorage.removeItem("konspekt"+i);
-      });
+    if(confirm("Точно очистить блокнот?")){
+      note.value = "";
+      localStorage.removeItem("mainNote");
     }
   }
 </script>
