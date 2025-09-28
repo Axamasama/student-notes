@@ -21,9 +21,33 @@
       padding:0;
       background: linear-gradient(135deg, #e8f0f8, #f2eaf8);
       display:flex;
-      justify-content:center;
+      flex-direction:column;
       align-items:center;
       min-height:100vh;
+    }
+
+    /* Заголовок */
+    .page-header{
+      text-align:center;
+      margin:25px 0 15px 0;
+      padding:15px 20px;
+      background:#ffffffcc;
+      border-radius:20px;
+      box-shadow:0 6px 20px rgba(0,0,0,0.1);
+      width:95%;
+      max-width:950px;
+      box-sizing:border-box;
+    }
+    .page-header h1{
+      margin:0;
+      font-size:24px;
+      color:#2c3e50;
+    }
+    .page-header p{
+      margin:6px 0;
+      font-size:16px;
+      color:#444;
+      line-height:1.5;
     }
 
     .container{
@@ -99,6 +123,8 @@
     @media (max-width:600px){
       textarea#notesMain{ height:320px; font-size:14px; }
       button{ flex:1 1 100%; width:100%; }
+      .page-header h1{ font-size:20px; }
+      .page-header p{ font-size:14px; }
     }
 
     /* Стили для скрытого рендера (html2canvas) */
@@ -110,7 +136,7 @@
       font-family: var(--page-font);
       font-size: 15px;
       line-height: 1.6;
-      white-space: pre-wrap; /* сохраняем переносы */
+      white-space: pre-wrap;
       word-wrap: break-word;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
@@ -118,6 +144,17 @@
   </style>
 </head>
 <body>
+
+  <!-- Заголовок -->
+  <div class="page-header">
+    <h1>Мастер года 2025</h1>
+    <p>30 сентября 2025 год</p>
+    <p>Преподаватель: <b>Куулар Виктория Тарасовна</b></p>
+    <p>Республика Тыва</p>
+    <p>Курский государственный политехнический техникум</p>
+  </div>
+
+  <!-- Блокнот -->
   <div class="container">
     <div class="note-box">
       <textarea id="notesMain" placeholder="Пиши здесь..."></textarea>
@@ -155,7 +192,6 @@
   function downloadDoc(){
     const { Document, Packer, Paragraph, TextRun } = window.docx;
     const paragraphs = [];
-    // сохраняем как один большой параграф, сохраняя переносы
     const lines = note.value.split("\n");
     lines.forEach((ln, idx) => {
       paragraphs.push(new Paragraph({ children: [ new TextRun(ln || " ") ] }));
@@ -171,9 +207,7 @@
     });
   }
 
-  // ==== PDF EXPORT (html2canvas + jsPDF) ====
   async function downloadPdf(){
-    // параметры PDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -182,14 +216,13 @@
     const marginLeft = 15;
     const marginRight = 15;
     const marginTop = 15;
-    const marginBottom = 25; // оставляем место для подписи
+    const marginBottom = 25;
 
     const contentWidthMM = pageWidth - marginLeft - marginRight;
-    const pxPerMm = 96 / 25.4; // примерно
-    const scale = Math.min(window.devicePixelRatio || 1, 2); // масштаб рендера (2 для лучшего качества, не слишком большой)
+    const pxPerMm = 96 / 25.4;
+    const scale = Math.min(window.devicePixelRatio || 1, 2);
     const contentWidthPx = Math.floor(contentWidthMM * pxPerMm * scale);
 
-    // создаём скрытый див для рендера, в нём используем <pre> чтобы сохранить переносы и пробелы
     const div = document.createElement('div');
     div.style.position = 'absolute';
     div.style.left = '-9999px';
@@ -207,7 +240,6 @@
     document.body.appendChild(div);
 
     try {
-      // рендерим в canvas
       const canvas = await html2canvas(div, {
         scale: scale,
         backgroundColor: '#ffffff',
@@ -216,50 +248,38 @@
         windowHeight: document.documentElement.clientHeight
       });
 
-      // расчёт высоты одной страницы в пикселях (контентная область)
       const pageContentHeightMM = pageHeight - marginTop - marginBottom;
       const pageContentHeightPx = Math.floor(pageContentHeightMM * pxPerMm * scale);
 
       let imgWidthPx = canvas.width;
       let imgHeightPx = canvas.height;
 
-      // если содержимое поместилось на одну страницу
       let slices = Math.ceil(imgHeightPx / pageContentHeightPx);
 
       for(let i = 0; i < slices; i++){
         const sliceStartY = i * pageContentHeightPx;
         const sliceHeightPx = Math.min(pageContentHeightPx, imgHeightPx - sliceStartY);
 
-        // создаём временный canvas для среза
         const sliceCanvas = document.createElement('canvas');
         sliceCanvas.width = imgWidthPx;
         sliceCanvas.height = sliceHeightPx;
         const ctx = sliceCanvas.getContext('2d');
-        // drawImage source: sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight
         ctx.drawImage(canvas, 0, sliceStartY, imgWidthPx, sliceHeightPx, 0, 0, imgWidthPx, sliceHeightPx);
 
         const imgData = sliceCanvas.toDataURL('image/jpeg', 1.0);
-
-        // вычисляем размеры в мм для вставки в PDF
         const sliceHeightMM = sliceHeightPx / (pxPerMm * scale);
 
-        // на первой странице просто добавляем картинку
         doc.addImage(imgData, 'JPEG', marginLeft, marginTop, contentWidthMM, sliceHeightMM);
 
-        // если ещё есть страницы — добавляем
         if(i < slices - 1) doc.addPage();
       }
 
-      
-
-      // сохраняем файл
       doc.save("bloknot.pdf");
 
     } catch (err) {
       alert("Ошибка при создании PDF: " + err);
       console.error(err);
     } finally {
-      // удаляем скрытый контейнер
       document.body.removeChild(div);
     }
   }
@@ -273,4 +293,3 @@
 </script>
 </body>
 </html>
-
